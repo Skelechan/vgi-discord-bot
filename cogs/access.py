@@ -1,4 +1,4 @@
-import discord, os
+import discord, os, mysql.connector
 from discord import app_commands, Member, VoiceState
 from discord.ext import commands
 
@@ -20,16 +20,13 @@ class Admin(commands.Cog):
         await ctx.response.send_message(embed=user_message, ephemeral=True)
 
     @commands.Cog.listener()
-    async def on_voice_state_update(self, member: Member, before: VoiceState, after: VoiceState):
-        guild_id = int(os.getenv("GUILD_ID"))
-        mod_channel = int(os.getenv("MOD_CHANNEL"))
-        server = self.bot.get_guild(guild_id)
-        default_role_id = server.default_role.id
+    async def on_member_join(self, member: discord.Member) -> None:
+        guild = member.guild
+        if guild is not None and guild.id == int(os.getenv("GUILD_ID")):
+            cnx = mysql.connector.connect(user=os.getenv('DB_USER'), password=os.getenv('DB_PASSWORD'), host=os.getenv('DB_HOST'), port=os.getenv('DB_PORT'), database=os.getenv('VGI_DB'))
+            if cnx and cnx.is_connected():
+                with cnx.cursor(dictionary=True) as cursor:
+                    cursor.execute("INSERT INTO members (member_id, friendly_name) VALUES (%s, %s)", (member.id, member.name))
 
-        if after.channel is not None or before.channel.guild.id != guild_id:
-            return
-
-        if len(member.roles) == 1 and member.roles[0].id == default_role_id:
-            await member.kick(reason="Purge Temporary User")
-            mod_alert = discord.Embed(title="Temporary Access Expired", description=f"{member.nick} ({member.name}) kicked")
-            await server.get_channel(mod_channel).send(embed=mod_alert)
+            cnx.commit()
+            cnx.close()
