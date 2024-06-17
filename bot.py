@@ -5,6 +5,7 @@ from cogs.access import Admin
 from cogs.birthday import Birthday
 from cogs.general import General
 from cogs.osu import Osu
+from cogs.streamevents import StreamEvents
 from cogs.twitter import Twitter
 
 load_dotenv()
@@ -22,6 +23,7 @@ async def on_ready():
     await bot.add_cog(Osu(bot))
     await bot.add_cog(Birthday(bot))
     await bot.add_cog(General(bot))
+    await bot.add_cog(StreamEvents(bot))
     await bot.tree.sync()
     print('Ready!')
 
