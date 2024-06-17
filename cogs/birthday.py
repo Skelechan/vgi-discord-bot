@@ -8,7 +8,7 @@ class Birthday(commands.Cog):
     def __init__(self, bot: commands.Bot):
         self.bot = bot
         self.birthday_channel = int(os.getenv("BIRTHDAY_CHANNEL"))
-        self.last_run: datetime | None = None
+        self.last_run: datetime = None
         self.birthday_check.start()
 
     load_dotenv()
@@ -61,12 +61,12 @@ class Birthday(commands.Cog):
             await ctx.response.send_message(embed=error_message, ephemeral=True)
             return
 
-    @tasks.loop(hours=1)
+    @tasks.loop(minutes=1)
     async def birthday_check(self):
         if not self.bot.is_ready():
             return
 
-        if self.last_run is None or self.last_run.date() != datetime.date.today():
+        if self.last_run is None or self.last_run != datetime.date.today():
             now = datetime.date.today()
             self.last_run = now
 
