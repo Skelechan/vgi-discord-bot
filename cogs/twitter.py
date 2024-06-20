@@ -17,7 +17,7 @@ class Twitter(commands.Cog):
     @app_commands.default_permissions(administrator=True)
     @app_commands.describe(content="The message to tweet on main", url="The URL to QRT")
     async def post_tweet(self, ctx: discord.Interaction, content: str, url: str | None) -> None:
-        if self.tweet_fails_validation(ctx, content):
+        if await self.tweet_fails_validation(ctx, content):
             return
 
         tweet_id = None
