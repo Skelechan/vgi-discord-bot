@@ -23,10 +23,8 @@ class Admin(commands.Cog):
     async def on_member_join(self, member: discord.Member) -> None:
         guild = member.guild
         if guild is not None and guild.id == int(os.getenv("GUILD_ID")):
-            cnx = mysql.connector.connect(user=os.getenv('DB_USER'), password=os.getenv('DB_PASSWORD'), host=os.getenv('DB_HOST'), port=os.getenv('DB_PORT'), database=os.getenv('VGI_DB'))
-            if cnx and cnx.is_connected():
-                with cnx.cursor(dictionary=True) as cursor:
+            with mysql.connector.connect(user=os.getenv('DB_USER'), password=os.getenv('DB_PASSWORD'), host=os.getenv('DB_HOST'), port=os.getenv('DB_PORT'), database=os.getenv('VGI_DB')) as connection:
+                with connection.cursor(dictionary=True) as cursor:
                     cursor.execute("INSERT INTO members (member_id, friendly_name) VALUES (%s, %s)", (member.id, member.name))
 
-            cnx.commit()
-            cnx.close()
+            connection.commit()

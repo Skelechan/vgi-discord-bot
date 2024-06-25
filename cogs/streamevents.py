@@ -20,9 +20,8 @@ class StreamEvents(commands.Cog):
             return
         social_records = []
 
-        cnx = mysql.connector.connect(user=os.getenv('DB_USER'), password=os.getenv('DB_PASSWORD'), host=os.getenv('DB_HOST'), port=os.getenv('DB_PORT'), database=os.getenv('VGI_DB'))
-        if cnx and cnx.is_connected():
-            with cnx.cursor(dictionary=True) as cursor:
+        with mysql.connector.connect(user=os.getenv('DB_USER'), password=os.getenv('DB_PASSWORD'), host=os.getenv('DB_HOST'), port=os.getenv('DB_PORT'), database=os.getenv('VGI_DB')) as connection:
+            with connection.cursor(dictionary=True) as cursor:
                 cursor.execute('SELECT socials.member_id, socials.social_type, socials.link FROM socials WHERE social_type IN (1,3)')
                 for row in cursor.fetchall():
                     social_records.append({

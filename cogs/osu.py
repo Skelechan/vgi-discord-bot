@@ -16,10 +16,8 @@ class Osu(commands.Cog):
     @osu_group.command(name="stats", description="Get a user profile")
     @app_commands.describe(user="The stats you want to load")
     async def get_profile(self, ctx: discord.Interaction, user: discord.Member) -> None:
-        cnx = mysql.connector.connect(user=os.getenv('DB_USER'), password=os.getenv('DB_PASSWORD'), host=os.getenv('DB_HOST'), port=os.getenv('DB_PORT'), database=os.getenv('OSU_DB'))
-
-        if cnx and cnx.is_connected():
-            with cnx.cursor(dictionary=True) as cursor:
+        with mysql.connector.connect(user=os.getenv('DB_USER'), password=os.getenv('DB_PASSWORD'), host=os.getenv('DB_HOST'), port=os.getenv('DB_PORT'), database=os.getenv('OSU_DB')) as connection:
+            with connection.cursor(dictionary=True) as cursor:
                 cursor.execute("SELECT user_id, user_name, user_country, stats_mode, stats_tscore, stats_rscore, stats_pp, stats_plays, stats_playtime, stats_acc, stats_max_combo, stats_xh_count, stats_x_count, stats_sh_count, stats_s_count, stats_a_count, stats_ranking "
                                         "FROM bancho.v_leaderboard "
                                         "WHERE user_discord_id = %s "
@@ -46,17 +44,11 @@ class Osu(commands.Cog):
                 profile_message.set_thumbnail(url=f'https://a.{osu_url}/{user_id}')
                 await ctx.response.send_message(embed=profile_message)
 
-            cnx.close()
-        else:
-            print("Could not connect")
-
     @osu_group.command(name="top", description="Get top plays")
     @app_commands.describe(user="Filter top plays by user")
     async def get_top(self, ctx: discord.Interaction, user: discord.Member | None) -> None:
-        cnx = mysql.connector.connect(user=os.getenv('DB_USER'), password=os.getenv('DB_PASSWORD'), host=os.getenv('DB_HOST'), port=os.getenv('DB_PORT'), database=os.getenv('OSU_DB'))
-
-        if cnx and cnx.is_connected():
-            with cnx.cursor(dictionary=True) as cursor:
+        with mysql.connector.connect(user=os.getenv('DB_USER'), password=os.getenv('DB_PASSWORD'), host=os.getenv('DB_HOST'), port=os.getenv('DB_PORT'), database=os.getenv('OSU_DB')) as connection:
+            with connection.cursor(dictionary=True) as cursor:
                 sql = ("SELECT user_id, user_name,user_country, map_set_id, map_id, map_version, map_title, map_max_combo, map_diff, mod_name, score_mode, score_score, score_grade, score_pp, score_acc, score_max_combo, score_n300, score_n100, score_n50, score_nmiss, score_play_time "
                        "FROM bancho.v_scores "
                        "WHERE score_mode = 0 "
@@ -102,17 +94,11 @@ class Osu(commands.Cog):
                 stats_message.set_thumbnail(url=f'https://a.{osu_url}/{primary_id}')
                 await ctx.response.send_message(embed=stats_message)
 
-            cnx.close()
-        else:
-            print("Could not connect")
-
     @osu_group.command(name="recent", description="Get most recent plays")
     @app_commands.describe(user="Filter recent plays by user")
     async def get_recent(self, ctx: discord.Interaction, user: discord.Member | None) -> None:
-        cnx = mysql.connector.connect(user=os.getenv('DB_USER'), password=os.getenv('DB_PASSWORD'), host=os.getenv('DB_HOST'), port=os.getenv('DB_PORT'), database=os.getenv('OSU_DB'))
-
-        if cnx and cnx.is_connected():
-            with cnx.cursor(dictionary=True) as cursor:
+        with mysql.connector.connect(user=os.getenv('DB_USER'), password=os.getenv('DB_PASSWORD'), host=os.getenv('DB_HOST'), port=os.getenv('DB_PORT'), database=os.getenv('OSU_DB')) as connection:
+            with connection.cursor(dictionary=True) as cursor:
                 sql = ("SELECT user_id, user_name,user_country, map_set_id, map_id, map_version, map_title, map_max_combo, map_diff, mod_name, score_mode, score_score, score_grade, score_pp, score_acc, score_max_combo, score_n300, score_n100, score_n50, score_nmiss, score_play_time "
                        "FROM bancho.v_scores "
                        "WHERE score_mode = 0 ")
@@ -157,16 +143,10 @@ class Osu(commands.Cog):
                 stats_message.set_thumbnail(url=f'https://a.{osu_url}/{primary_id}')
                 await ctx.response.send_message(embed=stats_message)
 
-            cnx.close()
-        else:
-            print("Could not connect")
-
     @osu_group.command(name="leaderboard", description="Get Osu! leaderboard")
     async def get_leaderboard(self, ctx: discord.Interaction) -> None:
-        cnx = mysql.connector.connect(user=os.getenv('DB_USER'), password=os.getenv('DB_PASSWORD'), host=os.getenv('DB_HOST'), port=os.getenv('DB_PORT'), database=os.getenv('OSU_DB'))
-
-        if cnx and cnx.is_connected():
-            with cnx.cursor(dictionary=True) as cursor:
+        with mysql.connector.connect(user=os.getenv('DB_USER'), password=os.getenv('DB_PASSWORD'), host=os.getenv('DB_HOST'), port=os.getenv('DB_PORT'), database=os.getenv('OSU_DB')) as connection:
+            with connection.cursor(dictionary=True) as cursor:
                 cursor.execute(("SELECT user_id, user_name, user_country, stats_pp, stats_acc, stats_max_combo "
                                 "FROM bancho.v_leaderboard "
                                 "WHERE stats_mode = 0 "))
@@ -197,10 +177,6 @@ class Osu(commands.Cog):
                 leaderboard_message.set_author(name=f'Osu! Leaderboard', icon_url=f'https://{osu_url}/static/images/flags/{primary_location.upper()}.png', url=f"https://{osu_url}/leaderboard/std/rscore/vn")
                 leaderboard_message.set_thumbnail(url=f'https://a.{osu_url}/{primary_id}')
                 await ctx.response.send_message(embed=leaderboard_message)
-
-            cnx.close()
-        else:
-            print("Could not connect")
 
     @osu_group.command(name="code", description="Get secret join code")
     async def get_leaderboard(self, ctx: discord.Interaction) -> None:

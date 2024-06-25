@@ -40,9 +40,8 @@ class Birthday(commands.Cog):
 
         birth_date = datetime.date(day=day, month=month, year=2024)
 
-        cnx = mysql.connector.connect(user=os.getenv('DB_USER'), password=os.getenv('DB_PASSWORD'), host=os.getenv('DB_HOST'), port=os.getenv('DB_PORT'), database=os.getenv('VGI_DB'))
-        if cnx and cnx.is_connected():
-            with cnx.cursor(dictionary=True) as cursor:
+        with mysql.connector.connect(user=os.getenv('DB_USER'), password=os.getenv('DB_PASSWORD'), host=os.getenv('DB_HOST'), port=os.getenv('DB_PORT'), database=os.getenv('VGI_DB')) as connection:
+            with connection.cursor(dictionary=True) as cursor:
                 cursor.execute('SELECT COUNT(member_id) FROM members WHERE member_id = %s', params=[ctx.user.id])
                 member_count = cursor.fetchone()
 
@@ -51,15 +50,10 @@ class Birthday(commands.Cog):
                 else:
                     cursor.execute('UPDATE members SET birthday = %s WHERE member_id = %s', params=[birth_date, ctx.user.id])
 
-                cnx.commit()
+                connection.commit()
 
-                error_message = discord.Embed(description=f"YIPPEEEEEEE. YOur birthday has been set to {day}/{month}")
+                error_message = discord.Embed(description=f"YIPPEEEEEEE. Your birthday has been set to {day}/{month}")
                 await ctx.response.send_message(embed=error_message, ephemeral=True)
-            cnx.close()
-        else:
-            error_message = discord.Embed(description="Something went wrong, DM Skelly <3")
-            await ctx.response.send_message(embed=error_message, ephemeral=True)
-            return
 
     @tasks.loop(minutes=1)
     async def birthday_check(self):
@@ -70,9 +64,8 @@ class Birthday(commands.Cog):
             now = datetime.date.today()
             self.last_run = now
 
-            cnx = mysql.connector.connect(user=os.getenv('DB_USER'), password=os.getenv('DB_PASSWORD'), host=os.getenv('DB_HOST'), port=os.getenv('DB_PORT'), database=os.getenv('VGI_DB'))
-            if cnx and cnx.is_connected():
-                with cnx.cursor(dictionary=True) as cursor:
+            with mysql.connector.connect(user=os.getenv('DB_USER'), password=os.getenv('DB_PASSWORD'), host=os.getenv('DB_HOST'), port=os.getenv('DB_PORT'), database=os.getenv('VGI_DB')) as connection:
+                with connection.cursor(dictionary=True) as cursor:
                     cursor.execute('SELECT member_id FROM members WHERE MONTH(birthday) = %s AND DAY(birthday) = %s', params=[now.month, now.day])
                     rows = cursor.fetchall()
 
