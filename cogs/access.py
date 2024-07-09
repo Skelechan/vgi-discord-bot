@@ -1,11 +1,18 @@
-import discord, os, mysql.connector
-from discord import app_commands, Member, VoiceState
+import discord
+import os
+import MySQLdb
+from discord import app_commands
 from discord.ext import commands
 
 
 class Admin(commands.Cog):
     def __init__(self, bot: commands.Bot):
         self.bot = bot
+        self.db_user = os.getenv('DB_USER')
+        self.db_password = os.getenv('DB_PASSWORD')
+        self.db_host = os.getenv('DB_HOST')
+        self.db_port = int(os.getenv('DB_PORT'))
+        self.db_db = os.getenv('VGI_DB')
 
     group = app_commands.Group(name="access", description="Grants access to the VGI server")
 
@@ -23,8 +30,9 @@ class Admin(commands.Cog):
     async def on_member_join(self, member: discord.Member) -> None:
         guild = member.guild
         if guild is not None and guild.id == int(os.getenv("GUILD_ID")):
-            with mysql.connector.connect(user=os.getenv('DB_USER'), password=os.getenv('DB_PASSWORD'), host=os.getenv('DB_HOST'), port=os.getenv('DB_PORT'), database=os.getenv('VGI_DB')) as connection:
-                with connection.cursor(dictionary=True) as cursor:
-                    cursor.execute("INSERT INTO members (member_id, friendly_name) VALUES (%s, %s)", (member.id, member.name))
+            cnx = MySQLdb.connect(user=self.db_user, password=self.db_password, host=self.db_host, port=self.db_port, database=self.db_db)
+            cursor = cnx.cursor()
+            cursor.execute("INSERT INTO members (member_id, friendly_name) VALUES (%s, %s)", (member.id, member.name))
 
-            connection.commit()
+            cnx.commit()
+            cnx.close()

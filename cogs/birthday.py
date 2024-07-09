@@ -1,12 +1,20 @@
-import discord, os, datetime, mysql.connector
-from dotenv import load_dotenv
+import datetime
+import discord
+import os
+import MySQLdb
 from discord import app_commands
 from discord.ext import commands, tasks
+from dotenv import load_dotenv
 
 
 class Birthday(commands.Cog):
     def __init__(self, bot: commands.Bot):
         self.bot = bot
+        self.db_user = os.getenv('DB_USER')
+        self.db_password = os.getenv('DB_PASSWORD')
+        self.db_host = os.getenv('DB_HOST')
+        self.db_port = int(os.getenv('DB_PORT'))
+        self.db_db = os.getenv('VGI_DB')
         self.birthday_channel = int(os.getenv("BIRTHDAY_CHANNEL"))
         self.last_run: datetime = None
         self.birthday_check.start()
@@ -39,36 +47,40 @@ class Birthday(commands.Cog):
                 return
 
         birth_date = datetime.date(day=day, month=month, year=2024)
+        cnx = MySQLdb.connect(user=self.db_user, password=self.db_password, host=self.db_host, port=self.db_port, database=self.db_db)
+        cursor = cnx.cursor(MySQLdb.cursors.DictCursor)
 
-        with mysql.connector.connect(user=os.getenv('DB_USER'), password=os.getenv('DB_PASSWORD'), host=os.getenv('DB_HOST'), port=os.getenv('DB_PORT'), database=os.getenv('VGI_DB')) as connection:
-            with connection.cursor(dictionary=True) as cursor:
-                cursor.execute('SELECT COUNT(member_id) FROM members WHERE member_id = %s', params=[ctx.user.id])
-                member_count = cursor.fetchone()
+        cursor.execute('SELECT COUNT(member_id) FROM members WHERE member_id = %s', (ctx.user.id))
+        member_count = cursor.fetchone()
 
-                if member_count['COUNT(member_id)'] == 0:
-                    cursor.execute('INSERT INTO members (member_id, birthday) VALUES (%s, %s)', params=[ctx.user.id, birth_date])
-                else:
-                    cursor.execute('UPDATE members SET birthday = %s WHERE member_id = %s', params=[birth_date, ctx.user.id])
+        if member_count['COUNT(member_id)'] == 0:
+            cursor.execute('INSERT INTO members (member_id, birthday) VALUES (%s, %s)', (ctx.user.id, birth_date))
+        else:
+            cursor.execute('UPDATE members SET birthday = %s WHERE member_id = %s', (birth_date, ctx.user.id))
 
-                connection.commit()
+        cnx.commit()
+        cnx.close()
 
-                error_message = discord.Embed(description=f"YIPPEEEEEEE. Your birthday has been set to {day}/{month}")
-                await ctx.response.send_message(embed=error_message, ephemeral=True)
+        error_message = discord.Embed(description=f"YIPPEEEEEEE. Your birthday has been set to {day}/{month}")
+        await ctx.response.send_message(embed=error_message, ephemeral=True)
+
 
     @tasks.loop(minutes=1)
     async def birthday_check(self):
         if not self.bot.is_ready():
             return
 
-        if self.last_run is None or self.last_run != datetime.date.today():
-            now = datetime.date.today()
-            self.last_run = now
+        today = datetime.date.today()
+        if self.last_run is None or self.last_run != today:
+            self.last_run = today
 
-            with mysql.connector.connect(user=os.getenv('DB_USER'), password=os.getenv('DB_PASSWORD'), host=os.getenv('DB_HOST'), port=os.getenv('DB_PORT'), database=os.getenv('VGI_DB')) as connection:
-                with connection.cursor(dictionary=True) as cursor:
-                    cursor.execute('SELECT member_id FROM members WHERE MONTH(birthday) = %s AND DAY(birthday) = %s', params=[now.month, now.day])
-                    rows = cursor.fetchall()
+            cnx = MySQLdb.connect(user=self.db_user, password=self.db_password, host=self.db_host, port=self.db_port, database=self.db_db)
+            cursor = cnx.cursor(MySQLdb.cursors.DictCursor)
+            cursor.execute('SELECT member_id FROM members WHERE MONTH(birthday) = %s AND DAY(birthday) = %s', (today.month, today.day))
+            rows = cursor.fetchall()
 
-                    for row in rows:
-                        embed = discord.Embed(title="HAPPY BIRTHDAY", description=f"YIPPEEEE. Today is <@{row['member_id']}>'s birthday!!!!")
-                        await self.bot.get_channel(self.birthday_channel).send(embed=embed)
+            for row in rows:
+                embed = discord.Embed(title="HAPPY BIRTHDAY", description=f"YIPPEEEE. Today is <@{row['member_id']}>'s birthday!!!!")
+                await self.bot.get_channel(self.birthday_channel).send(embed=embed)
+
+            cursor.close()
